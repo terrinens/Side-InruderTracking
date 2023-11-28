@@ -1,4 +1,5 @@
 ﻿from sqlalchemy import Column, Integer, String
+
 from fastapi_proj.database.database_connection import Base
 
 

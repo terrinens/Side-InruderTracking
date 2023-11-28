@@ -1,14 +1,8 @@
-﻿from fastapi_proj.database.database_connection import Base, get_db
+﻿from datetime import datetime, time
 
-from fastapi import Depends, WebSocket
+from sqlalchemy import Column, Integer, Date, Time
 
-from sqlalchemy import Column, Integer, Date, Time, String, func
-from sqlalchemy.orm import Session
-
-from datetime import datetime, time
-
-from fastapi_proj.tracking_apis.mediapipe_api import webcam
-from fastapi_proj.tracking_apis.mediapipe_api.person_detector import default_detector
+from fastapi_proj.database.database_connection import Base
 
 
 class FileList(Base):

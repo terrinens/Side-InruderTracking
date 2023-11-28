@@ -1,15 +1,15 @@
-import asyncio
 import cv2
 import os
 import time
-import fastapi_proj.tracking_apis.mediapipe_api.person_detector as p_det
-
-from sqlalchemy.orm import Session
 from datetime import datetime
+from typing import Optional
 
+import cv2
+from fastapi import WebSocket, Depends
+from sqlalchemy.orm import Session
 from websockets.exceptions import ConnectionClosedError
-from fastapi import WebSocketException, WebSocket, Depends
-from typing import Generator, AsyncGenerator, AsyncIterable, Optional
+
+import fastapi_proj.tracking_apis.mediapipe_api.person_detector as p_det
 from fastapi_proj.database.tables import filelist
 
 VIDEOS_DIR = "C:\\Side Proj\\Side-IntruderTracking\\videos\\"

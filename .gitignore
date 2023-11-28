@@ -5,7 +5,10 @@
 # Created by git for backups. To disable backups in Git:
 # $ git config --global mergetool.keepBackup false
 *.orig
-/fastapi_proj/database/IntruderTracking.sqlite3
+*.sqlite3
+*.sqlite
+database/*.sqlite3
+database/*.sqlite
 
 
 # Created by git when using merge tools for conflicts

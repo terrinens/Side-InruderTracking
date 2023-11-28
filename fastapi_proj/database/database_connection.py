@@ -1,7 +1,6 @@
 ﻿import sqlalchemy
-from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
-
+from sqlalchemy.orm import sessionmaker
 
 # noinspection SpellCheckingInspection
 DB_URL = 'sqlite:///fastapi_proj/database/IntruderTracking.sqlite3'
