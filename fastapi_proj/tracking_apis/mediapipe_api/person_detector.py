@@ -1,56 +1,67 @@
-﻿import numpy as np
+﻿import os.path
+
+import numpy as np
 import mediapipe as mp
 import cv2
+
+from typing import Optional
 
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 from fastapi_proj.tracking_apis.mediapipe_api.Visualizations.person_detecor_Vz import visualize as pvz
 
 # noinspection SpellCheckingInspection
-MODEL_FILE = ("C:\\AI-X\\Side Proj\\Side-IntruderTracking\\fastapi_proj\\tracking_apis\\mediapipe_api\\models"
-              "\\efficientdet_lite0.tflite")
+MODEL_FILE = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    "models",
+    "efficientdet_lite0.tflite"
+)
 
-base_options = python.BaseOptions(model_asset_path=MODEL_FILE)
-options = vision.ObjectDetectorOptions(
-    base_options=base_options,
-    score_threshold=0.5,
+default_options = vision.ObjectDetectorOptions(
+    display_names_locale="ko",
+    base_options=python.BaseOptions(model_asset_path=MODEL_FILE),
+    score_threshold=0.7,
     category_allowlist=["person"]
 )
-detector = vision.ObjectDetector.create_from_options(options)
+default_detector = vision.ObjectDetector.create_from_options(default_options)
 
 
-def private_cv2_img_encode(buffer):
+def get_mp_image(buffer):
     img = cv2.imdecode(
         np.frombuffer(buffer, np.uint8),
         cv2.IMREAD_COLOR
     )
 
-    mp_image = mp.Image(
+    return mp.Image(
         image_format=mp.ImageFormat.SRGB,
         data=cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     )
 
-    de = detector.detect(mp_image)
-    annotated_image = pvz(np.copy(mp_image.numpy_view()), de)
 
-    rgb_annotated_image = cv2.cvtColor(annotated_image, cv2.COLOR_BGR2RGB)
-    return cv2.imencode(".jpg", rgb_annotated_image)[1]
+def get_detect(mp_image: mp.Image):
+    return default_detector.detect(mp_image)
 
 
-def get_webcam_detector(buffer):
-    img_encode = private_cv2_img_encode(buffer)
+def get_cvt_color(buffer, detect: default_detector.detect):
+    mp_image = get_mp_image(buffer)
+    sol_detect = detect
+
+    annotated_image = pvz(
+        np.copy(mp_image.numpy_view()),
+        sol_detect
+    )
+    return cv2.cvtColor(annotated_image, cv2.COLOR_BGR2RGB)
+
+
+def get_img_encode_bytes(buffer, detect: Optional[default_detector.detect] = None):
+    if detect is None:
+        detect = get_detect(get_mp_image(buffer))
+
+    img_encode = cv2.imencode(".jpg", get_cvt_color(buffer, detect))[1]
     return img_encode.tobytes()
 
 
-# def get_detector_data(buffer):
-#     mp_image = mp.Image(
-#         image_format=mp.ImageFormat.SRGB,
-#         data=cv2.cvtColor(
-#             cv2.imdecode(
-#                 np.frombuffer(buffer, np.uint8),
-#                 cv2.IMREAD_COLOR
-#             ),
-#             cv2.COLOR_BGR2RGB
-#         )
-#     )
-#     detector.detect_async(mp_image)
+def get_detect_and_bytes(buffer):
+    detect = get_detect(get_mp_image(buffer))
+    encoded_bytes = get_img_encode_bytes(buffer, detect)
+    return detect, encoded_bytes

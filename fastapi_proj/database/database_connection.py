@@ -13,4 +13,7 @@ Base.metadata.create_all(Engine)
 
 def get_db():
     db = SessionLocal()
-    yield db
+    try:
+        yield db
+    finally:
+        db.close()
