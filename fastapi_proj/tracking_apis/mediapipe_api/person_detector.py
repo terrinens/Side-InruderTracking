@@ -4,8 +4,10 @@ from typing import Optional
 import cv2
 import mediapipe as mp
 import numpy as np
+from fastapi import WebSocket
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
+from websockets import ConnectionClosedError
 
 from fastapi_proj.tracking_apis.mediapipe_api.Visualizations.person_detecor_Vz import visualize as pvz
 
@@ -64,3 +66,31 @@ def get_detect_and_bytes(buffer):
     detect = get_detect(get_mp_image(buffer))
     encoded_bytes = get_img_encode_bytes(buffer, detect)
     return detect, encoded_bytes
+
+
+async def ex_webcam_person_detector(websocket: WebSocket, webcam: Optional[cv2.VideoCapture]):
+    """
+    :param websocket: 지속적이고 깔끔한 송신을 위한 웹소켓을 이용해 송출하기 위함입니다
+    :param webcam: 촬영을 위한 웹캠입니다.
+    :return: 탐지한 이미지를 encode 하여 bytes 를 반환합니다.
+    """
+    await websocket.accept()
+    while webcam.isOpened():
+        success, frame = webcam.read()
+        if not success:
+            webcam.release()
+            break
+
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+        try:
+            _, buffer = cv2.imencode('.jpg', frame)
+            re_frame = get_img_encode_bytes(buffer)
+            await websocket.send_bytes(re_frame)
+
+        except ConnectionClosedError:
+            pass
+
+        finally:
+            webcam.release()
