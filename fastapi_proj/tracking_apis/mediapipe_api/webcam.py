@@ -1,4 +1,3 @@
-import cv2
 import os
 import time
 from datetime import datetime
@@ -55,6 +54,7 @@ def read_webcam_frame(webcam_: webcam):
         return None
     return frame
 
+
 def video_writer(queue: Queue):
     out = None
     while True:
@@ -70,6 +70,14 @@ def video_writer(queue: Queue):
 
     if out is not None:
         out.release()
+
+
+def writer_processing_start():
+    queue = Queue()
+    writer_process = Process(target=video_writer, args=(queue,))
+    writer_process.start()
+    return queue, writer_process
+
 
 async def webcam_person_detector(websocket: WebSocket):
     await websocket.accept()
@@ -95,13 +103,16 @@ async def webcam_person_detector(websocket: WebSocket):
 
 async def webcam_websocket_recode(websocket: WebSocket, db: Session = Depends(db_c.get_db)):
     await websocket.accept()
+    queue, writer_process = writer_processing_start()
+
+    save_path = None
 
     start_time = None
-    fl = None
     end_time = None
+
+    fl = None
     person_detected = False
     count_detector = 0
-    out = None
 
     try:
         while webcam.isOpened():
@@ -117,35 +128,42 @@ async def webcam_websocket_recode(websocket: WebSocket, db: Session = Depends(db
                 if start_time is None:
                     start_time = time.time()
 
-                elif (time.time() - start_time >= 10) and not person_detected:
+                elif (time.time() - start_time >= 5) and not person_detected:
                     fl = filelist.new_list(now.hour, now.minute)
-                    save_path = f"{VIDEOS_DIR}\\{fl.date}\\{fl.date}_{fl.time.strftime('%H-%M')}.mp4".strip()
-                    out = cv2.VideoWriter(save_path, cv2.VideoWriter.fourcc(*'mp4v'), fps, size)
+                    save_path = f"{VIDEOS_DIR}\\{fl.date}\\{fl.date}_{fl.time.strftime('%H-%M-%S')}.mp4".strip()
+                    print(fl)
+                    print(save_path)
                     person_detected = True
 
-            elif person_detected and end_time is None:
+            elif person_detected and not end_time:
+                print("엔드타임 시작")
                 end_time = time.time()
 
             if person_detected:
-                out.write(p_det.get_cvt_color(buffer, detect))
+                queue.put((buffer, detect, save_path))
 
-            if _ := end_time and (start_time - end_time) > 5:
-                out.release()
-                person_detected = False
-                start_time = None
-                end_time = None
+            if end_time:
+                print((time.time() - end_time))
+
+            if end_time and (time.time() - end_time) > 5:
+                print("5초 이상 감지되지 않음")
+                queue.put(None)
                 db.add(fl)
                 db.commit()
+
+                queue, writer_process = writer_processing_start()
+
+                start_time, end_time, fl = None, None, None
+                person_detected = False
 
             await websocket.send_bytes(encoded_frame)
 
     except ConnectionClosedError:
-        webcam.release()
-
-    if person_detected:
-        out.release()
-
-    await closable(webcam, None)
+        pass
+    finally:
+        queue.put(None)
+        await closable(webcam, None)
+        writer_process.join()
 
     if fl is not None:
         db.add(fl)

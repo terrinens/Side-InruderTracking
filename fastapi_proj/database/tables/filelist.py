@@ -5,10 +5,9 @@ from sqlalchemy import Column, Integer, Date, Time
 
 from fastapi_proj.database.database_connection import Base
 
-now = datetime.now()
-
 
 class FileList(Base):
+    now = datetime.now()
     __tablename__ = 'filelist'
     index = Column(Integer, primary_key=True, autoincrement=True)
     date = Column(Date, default=now.date())
@@ -19,18 +18,28 @@ class FileList(Base):
         self.count_detector = count
 
 
-def new_list(hour: Optional[Union[time, int]] = None, minute: Optional[Union[time, int]] = None):
-    if _ := hour:
-        hour = now.time()
+def new_list(hour: Optional[Union[time, int]] = None, minute: Optional[Union[time, int]] = None,
+             second: Optional[Union[time, int]] = None):
+
+    now = datetime.now()
+
+    if not hour:
+        hour = now.time().hour
     if isinstance(hour, time):
         hour = hour.hour
 
-    if _ := minute:
-        minute = now.time()
+    if not minute:
+        minute = now.time().minute
     if isinstance(minute, time):
         minute = minute.minute
 
+    if not second:
+        second = now.time().second
+    if isinstance(second, time):
+        second = second.second
+
     return FileList(
-        time=time(hour, minute),
+        date=now.date(),
+        time=time(hour, minute, second),
         count_detector=1
     )
