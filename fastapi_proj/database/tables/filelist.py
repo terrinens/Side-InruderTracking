@@ -8,7 +8,7 @@ from fastapi_proj.database.database_connection import Base
 
 class FileList(Base):
     now = datetime.now()
-    __tablename__ = 'filelist'
+    __tablename__ = 'file-list'
     index = Column(Integer, primary_key=True, autoincrement=True)
     date = Column(Date, default=now.date())
     time = Column(Time, default=now.time())
@@ -18,25 +18,20 @@ class FileList(Base):
         self.count_detector = count
 
 
-def new_list(hour: Optional[Union[time, int]] = None, minute: Optional[Union[time, int]] = None,
+def new_list(hour: Optional[Union[time, int]] = None,
+             minute: Optional[Union[time, int]] = None,
              second: Optional[Union[time, int]] = None):
 
     now = datetime.now()
 
-    if not hour:
-        hour = now.time().hour
-    if isinstance(hour, time):
-        hour = hour.hour
+    hour = hour or now.time().hour
+    if isinstance(hour, time): hour = hour.hour
 
-    if not minute:
-        minute = now.time().minute
-    if isinstance(minute, time):
-        minute = minute.minute
+    minute = minute or now.time().minute
+    if isinstance(minute, time): minute = minute.minute
 
-    if not second:
-        second = now.time().second
-    if isinstance(second, time):
-        second = second.second
+    second = second or now.time().second
+    if isinstance(second, time): second = second.second
 
     return FileList(
         date=now.date(),

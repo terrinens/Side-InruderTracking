@@ -50,18 +50,18 @@ create_today_folder(VIDEOS_DIR)
 
 
 async def closable(
-        webcam_: cv2.VideoCapture,
+        webcam: cv2.VideoCapture,
         out: Optional[cv2.VideoWriter] = None,
         queue: Optional[Queue] = None
 ):
     """
     해당 py 파일에서 사용되는 리소스들을 한번에 해제하기 위한 메서드 입니다.
-    :param webcam_: 웹캠 자원
+    :param webcam: 웹캠 자원
     :param out: 저장하기 위한 자원
     :param queue: 'multiprocessing'을 위한 자원
     """
-    if not webcam_.release():
-        webcam_.release()
+    if not webcam.release():
+        webcam.release()
     if out is not None:
         out.release()
     if queue is not None:
@@ -222,7 +222,7 @@ async def webcam_websocket_recode(websocket: WebSocket, db: Session = Depends(db
 
     # 사용된 자원들을 해제하기 위한 코드입니다.
     finally:
-        await closable(webcam_=webcam, queue=queue)
+        await closable(webcam=webcam, queue=queue)
 
         # ''multiprocessing''에 전달된 데이터들을 모두 처리 할때까지 기다립니다.
         # 하지만 착각하기 쉬운것이 있습니다. 'queue.join()'과는 해당 '.join'은 비슷한 작업을 실행하나,
